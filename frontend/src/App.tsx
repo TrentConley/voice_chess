@@ -1,0 +1,313 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { submitTurnStream, createSession, getSession, updateSkillLevel, type StreamUpdate } from "./api/client";
+import { Chessboard } from "./components/Chessboard";
+import "./components/Chessboard.css";
+import { useAudioRecorder } from "./hooks/useAudioRecorder";
+import type { MoveRecord, SessionState } from "./types";
+
+function computeHighlights(moves: MoveRecord[]): string[] {
+  if (!moves.length) {
+    return [];
+  }
+
+  return moves
+    .slice(-2)
+    .flatMap((move) => {
+      const uci = move.uci;
+      if (uci.length < 4) {
+        return [];
+      }
+      return [uci.slice(0, 2), uci.slice(2, 4)];
+    })
+    .filter(Boolean);
+}
+
+function speakMove(move: string) {
+  if (!("speechSynthesis" in window)) {
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(move);
+  utterance.rate = 1.05;
+  window.speechSynthesis.speak(utterance);
+}
+
+export default function App() {
+  const [session, setSession] = useState<SessionState | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showMoves, setShowMoves] = useState(true);
+  const [showPieces, setShowPieces] = useState(true);
+  const [showCoordinates, setShowCoordinates] = useState(true);
+  const [skillLevel, setSkillLevel] = useState(5);
+  const [gameEnded, setGameEnded] = useState(false);
+  const { isRecording, start, stop, error: recorderError } = useAudioRecorder();
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((registrations) => registrations.forEach((registration) => registration.unregister()))
+        .catch(() => undefined);
+    }
+  }, []);
+
+  const startNewGame = useCallback(async () => {
+    setIsLoading(true);
+    setGameEnded(false);
+    setError(null);
+    setStatus(null);
+    try {
+      const created = await createSession(skillLevel);
+      setSession(created);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to start session");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [skillLevel]);
+
+  useEffect(() => {
+    startNewGame();
+  }, []);
+
+  useEffect(() => {
+    if (recorderError) {
+      setError(recorderError);
+    }
+  }, [recorderError]);
+
+  const highlights = useMemo(() => (session ? computeHighlights(session.moves) : []), [session]);
+
+  const handleStartRecording = useCallback(async () => {
+    if (!session?.session_id || isRecording || isSubmitting) {
+      return;
+    }
+
+    try {
+      await start();
+      setStatus("Recording... (release to submit)");
+      setError(null);
+    } catch (err) {
+      setStatus(null);
+      setError(err instanceof Error ? err.message : "Could not access microphone");
+    }
+  }, [session, isRecording, isSubmitting, start]);
+
+  const handleStopRecording = useCallback(async () => {
+    if (!session?.session_id || !isRecording || isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatus("Uploading audio...");
+
+    try {
+      const blob = await stop();
+      if (!blob) {
+        throw new Error("No audio captured");
+      }
+
+      const handleStreamUpdate = (update: StreamUpdate) => {
+        switch (update.status) {
+          case 'transcribing':
+            setStatus("Transcribing audio...");
+            break;
+          case 'transcribed':
+            setStatus(`Heard: "${update.transcript}"`);
+            break;
+          case 'interpreting':
+            setStatus("Interpreting move with LLM...");
+            break;
+          case 'player_moved':
+            setStatus(`Your move: ${update.move?.san}. Engine is thinking...`);
+            break;
+          case 'engine_thinking':
+            setStatus("Engine is calculating...");
+            break;
+          case 'complete':
+            setStatus(`Complete! Engine replied ${update.engine_move?.san}.`);
+            break;
+        }
+      };
+
+      const turn = await submitTurnStream(session.session_id, blob, handleStreamUpdate);
+      
+      // Fetch updated session to get full move history
+      const updatedSession = await getSession(session.session_id);
+      setSession(updatedSession);
+      
+      setError(null);
+      
+      // Check for game-ending conditions
+      if (turn.engine_move.san === "Checkmate!") {
+        setStatus(`Checkmate! You win! Your move: ${turn.user_move.san}`);
+        speakMove("Checkmate! You win!");
+        setGameEnded(true);
+      } else if (turn.engine_move.san === "Stalemate") {
+        setStatus(`Stalemate! Game drawn. Your move: ${turn.user_move.san}`);
+        speakMove("Stalemate. Game drawn.");
+        setGameEnded(true);
+      } else if (turn.engine_move.san.endsWith("#")) {
+        setStatus(`Checkmate! Engine wins with ${turn.engine_move.san}`);
+        speakMove("Checkmate! I win!");
+        setGameEnded(true);
+      } else if (turn.engine_move.san.includes("Stalemate")) {
+        setStatus(`Stalemate! Game drawn. Engine played ${turn.engine_move.san}`);
+        speakMove("Stalemate. Game drawn.");
+        setGameEnded(true);
+      } else {
+        setStatus(
+          `Heard "${turn.transcript}". Interpreted move ${turn.user_move.san}. Engine replied ${turn.engine_move.san}.`
+        );
+        speakMove(turn.engine_move.san);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to process move");
+      setStatus(null);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [session, isRecording, isSubmitting, stop]);
+
+  // Handle keyboard: Hold Enter to record
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.repeat) {
+        handleStartRecording();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        handleStopRecording();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [handleStartRecording, handleStopRecording]);
+
+  if (isLoading) {
+    return <main className="container">Initializing session...</main>;
+  }
+
+  if (!session) {
+    return <main className="container">Failed to initialize session.</main>;
+  }
+
+  return (
+    <main className="container">
+      <section className="board-section">
+        <Chessboard
+          fen={session.fen}
+          highlights={highlights}
+          showCoordinates={showCoordinates}
+          showPieces={showPieces}
+        />
+      </section>
+
+      <section className="control-section">
+        <h1>Voice Chess</h1>
+        <h1>By Trent Conley</h1>
+
+        <p>Press record, speak your move, and hear Stockfish respond.</p>
+
+        <div className="controls">
+          <div className="record-area">
+            <button
+              className={`btn-record ${isRecording ? "recording" : ""}`}
+              onMouseDown={handleStartRecording}
+              onMouseUp={handleStopRecording}
+              onMouseLeave={handleStopRecording}
+              onTouchStart={handleStartRecording}
+              onTouchEnd={handleStopRecording}
+              disabled={isSubmitting || gameEnded}
+              aria-label="Hold to record move"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+            </button>
+            <div className="record-hint">
+              {isRecording ? "Release to submit" : gameEnded ? "Game over" : "Hold or press Enter"}
+            </div>
+          </div>
+
+          {gameEnded && (
+            <button className="btn-restart" onClick={startNewGame}>
+              Start New Game
+            </button>
+          )}
+
+          <div className="skill-level-control">
+            <label htmlFor="skill-level">
+              <span className="skill-label">Engine Difficulty</span>
+              <span className="skill-value">Level {skillLevel}</span>
+            </label>
+            <input
+              id="skill-level"
+              type="range"
+              min="0"
+              max="20"
+              value={skillLevel}
+              onChange={(e) => setSkillLevel(Number(e.target.value))}
+              disabled={isSubmitting || isRecording}
+            />
+            <div className="skill-markers">
+              <span>Beginner</span>
+              <span>Expert</span>
+            </div>
+          </div>
+
+          <div className="status-area">
+            {status && <div className="status">{status}</div>}
+            {error && <div className="error">{error}</div>}
+          </div>
+
+          <div className="toggle-group">
+            <button className={`btn-toggle ${showPieces ? "active" : ""}`} onClick={() => setShowPieces((prev) => !prev)}>
+              Pieces
+            </button>
+            <button className={`btn-toggle ${showCoordinates ? "active" : ""}`} onClick={() => setShowCoordinates((prev) => !prev)}>
+              Coords
+            </button>
+            <button className={`btn-toggle ${showMoves ? "active" : ""}`} onClick={() => setShowMoves((prev) => !prev)}>
+              History
+            </button>
+          </div>
+        </div>
+
+        {showMoves && (
+          <div className="moves">
+            <h2>Move History</h2>
+            {session.moves.length === 0 ? (
+              <p style={{ color: "#a3a3a3", fontSize: "0.875rem" }}>No moves yet.</p>
+            ) : (
+              <ol>
+                {session.moves.map((move) => (
+                  <li key={`${move.ply}-${move.timestamp}`} className={`move ${move.actor}`}>
+                    <strong>{move.actor === "player" ? "You" : "Engine"}</strong>
+                    <span>{move.san}</span>
+                    {move.actor === "player" && move.transcript ? <em>{move.transcript}</em> : null}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
