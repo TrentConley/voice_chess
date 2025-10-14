@@ -58,7 +58,8 @@ function parseFen(fen?: string): (string | null)[][] {
 }
 
 export function Chessboard({ fen, highlights = [], showCoordinates = true, showPieces = true }: ChessboardProps) {
-  const layout = useMemo(() => parseFen(fen), [fen]);
+  // Only parse FEN when pieces need to be shown - prevents flash when toggled off
+  const layout = useMemo(() => showPieces ? parseFen(fen) : null, [fen, showPieces]);
 
   return (
     <div className="board">
@@ -69,7 +70,7 @@ export function Chessboard({ fen, highlights = [], showCoordinates = true, showP
             const isLight = (fileIdx + rank) % 2 === 0;
             const isHighlighted = highlights.includes(id);
             const rowIndex = 8 - rank;
-            const pieceCode = showPieces ? layout[rowIndex]?.[fileIdx] ?? null : null;
+            const pieceCode = layout ? layout[rowIndex]?.[fileIdx] ?? null : null;
             const glyph = pieceCode ? pieceGlyph[pieceCode] ?? pieceCode : null;
 
             return (

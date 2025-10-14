@@ -128,8 +128,10 @@ class MoveInterpreter:
             "- 'bishop takes' → find any move with '(Bx...)', return its UCI\n"
             "- 'rook takes d5' → find move with '(Rxd5)', return its UCI\n"
             "\n"
-            "If the command is ambiguous, choose the most plausible legal move. "
-            "If no legal move exists, call the function with an empty string."
+            "CRITICAL: Only return a move if the spoken command clearly matches a legal move. "
+            "If the spoken command refers to a move that doesn't exist in the legal moves list "
+            "(e.g., 'f3 takes g6' when no piece on f3 can capture g6), call the function with an empty string. "
+            "Do NOT guess or return a different move than what was spoken."
         )
         legal_moves_formatted = []
         for move in board.legal_moves:

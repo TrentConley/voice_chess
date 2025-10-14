@@ -65,8 +65,27 @@ body {
 .control-section > p {
   font-size: 0.9375rem;
   color: #525252;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   line-height: 1.5;
+}
+
+.tip {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: #525252;
+  margin-bottom: 2rem;
+  line-height: 1.4;
+}
+
+.tip-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
 }
 
 .controls {

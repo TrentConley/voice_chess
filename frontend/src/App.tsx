@@ -23,14 +23,21 @@ function computeHighlights(moves: MoveRecord[]): string[] {
     .filter(Boolean);
 }
 
-function speakMove(move: string) {
-  if (!("speechSynthesis" in window)) {
-    return;
+async function speakMove(sessionId: string, move: string) {
+  try {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+    const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/tts/${encodeURIComponent(move)}`);
+    if (response.ok) {
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      await audio.play();
+      // Clean up object URL after playing
+      audio.onended = () => URL.revokeObjectURL(audioUrl);
+    }
+  } catch (err) {
+    console.error("TTS playback failed:", err);
   }
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(move);
-  utterance.rate = 1.05;
-  window.speechSynthesis.speak(utterance);
 }
 
 export default function App() {
@@ -145,25 +152,25 @@ export default function App() {
       // Check for game-ending conditions
       if (turn.engine_move.san === "Checkmate!") {
         setStatus(`Checkmate! You win! Your move: ${turn.user_move.san}`);
-        speakMove("Checkmate! You win!");
+        await speakMove(session.session_id, "Checkmate! You win!");
         setGameEnded(true);
       } else if (turn.engine_move.san === "Stalemate") {
         setStatus(`Stalemate! Game drawn. Your move: ${turn.user_move.san}`);
-        speakMove("Stalemate. Game drawn.");
+        await speakMove(session.session_id, "Stalemate. Game drawn.");
         setGameEnded(true);
       } else if (turn.engine_move.san.endsWith("#")) {
         setStatus(`Checkmate! Engine wins with ${turn.engine_move.san}`);
-        speakMove("Checkmate! I win!");
+        await speakMove(session.session_id, "Checkmate! I win!");
         setGameEnded(true);
       } else if (turn.engine_move.san.includes("Stalemate")) {
         setStatus(`Stalemate! Game drawn. Engine played ${turn.engine_move.san}`);
-        speakMove("Stalemate. Game drawn.");
+        await speakMove(session.session_id, "Stalemate. Game drawn.");
         setGameEnded(true);
       } else {
         setStatus(
           `Heard "${turn.transcript}". Interpreted move ${turn.user_move.san}. Engine replied ${turn.engine_move.san}.`
         );
-        speakMove(turn.engine_move.san);
+        await speakMove(session.session_id, turn.engine_move.san);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to process move");
@@ -219,7 +226,11 @@ export default function App() {
         <h1>Voice Chess</h1>
         <h1>By Trent Conley</h1>
 
-        <p>Press record, speak your move, and hear Stockfish respond.</p>
+        <p>Hold the button or press Enter, speak your move, then release.</p>
+        <div className="tip">
+          <span className="tip-icon">💡</span>
+          <span>Tip: Say moves like "d 2 to d 4" or "knight g 1 to f 3" for best results</span>
+        </div>
 
         <div className="controls">
           <div className="record-area">

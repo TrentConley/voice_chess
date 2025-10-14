@@ -12,6 +12,7 @@ from ..services.game_state import store
 from ..services.llm import MoveInterpreter, get_move_interpreter
 from ..services.stockfish import get_stockfish_service
 from ..services.transcription import TranscriptionService, get_transcription_service
+from ..services.tts import get_tts_service
 
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,23 @@ async def get_session(session_id: str) -> SessionStateResponse:
         return store.to_response(session_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Session not found") from exc
+
+
+@router.get("/{session_id}/tts/{move_san}")
+async def get_move_speech(session_id: str, move_san: str):
+    """Generate TTS audio for a chess move."""
+    from fastapi.responses import Response
+    
+    try:
+        # Verify session exists
+        store.get_session(session_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Session not found") from exc
+    
+    tts = get_tts_service()
+    audio_bytes = tts.generate_speech(move_san)
+    
+    return Response(content=audio_bytes, media_type="audio/mpeg")
 
 
 @router.post("/{session_id}/turn", response_model=TurnResponse)
@@ -116,7 +134,10 @@ async def take_turn(
         if not player_move:
             logger.error("Invalid move string from LLM: '%s'", interpretation.uci)
             logger.error("Transcript was: '%s'", transcript)
-            raise HTTPException(status_code=400, detail=f"Invalid move: {interpretation.uci}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Could not understand move: Heard \"{transcript}\" but couldn't interpret it as a valid chess move. Please try again."
+            )
 
     if player_move not in session.board.legal_moves:
         legal_moves_uci = [m.uci() for m in session.board.legal_moves]
@@ -124,7 +145,10 @@ async def take_turn(
         logger.error("Legal moves were: %s", ", ".join(legal_moves_uci))
         logger.error("Board position (FEN): %s", session.board.fen())
         logger.error("Transcript was: '%s'", transcript)
-        raise HTTPException(status_code=400, detail=f"Illegal move: {player_move.uci()}")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Illegal move: Heard \"{transcript}\" but {player_move.uci()} is not a legal move in this position."
+        )
 
     player_san = session.board.san(player_move)
     session.board.push(player_move)
@@ -282,7 +306,8 @@ async def take_turn_stream(
                 if not player_move:
                     logger.error("Invalid move string from LLM: '%s'", interpretation.uci)
                     logger.error("Transcript was: '%s'", transcript)
-                    yield f"data: {json.dumps({'error': f'Invalid move: {interpretation.uci}'})}\n\n"
+                    error_msg = f"Could not understand move: Heard \"{transcript}\" but couldn't interpret it as a valid chess move. Please try again."
+                    yield f"data: {json.dumps({'error': error_msg})}\n\n"
                     return
 
             if player_move not in session.board.legal_moves:
@@ -291,7 +316,8 @@ async def take_turn_stream(
                 logger.error("Legal moves were: %s", ", ".join(legal_moves_uci))
                 logger.error("Board position (FEN): %s", session.board.fen())
                 logger.error("Transcript was: '%s'", transcript)
-                yield f"data: {json.dumps({'error': f'Illegal move: {player_move.uci()}'})}\n\n"
+                error_msg = f"Illegal move: Heard \"{transcript}\" but {player_move.uci()} is not a legal move in this position."
+                yield f"data: {json.dumps({'error': error_msg})}\n\n"
                 return
 
             player_san = session.board.san(player_move)
