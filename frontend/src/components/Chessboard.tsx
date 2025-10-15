@@ -78,7 +78,7 @@ export function Chessboard({ fen, highlights = [], showCoordinates = true, showP
                 key={id}
                 className={`square ${isLight ? "light" : "dark"} ${isHighlighted ? "highlight" : ""}`.trim()}
               >
-                {glyph && <span className="piece">{glyph}</span>}
+                {showPieces && glyph && <span className="piece">{glyph}</span>}
                 {showCoordinates && <span className="coord">{id}</span>}
               </div>
             );
