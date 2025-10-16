@@ -88,7 +88,7 @@ export default function App() {
     }
   }, [recorderError]);
 
-  const highlights = useMemo(() => (session ? computeHighlights(session.moves) : []), [session]);
+  const highlights = useMemo(() => (session ? computeHighlights(session.moves) : []), [session?.moves]);
 
   const handleStartRecording = useCallback(async () => {
     if (!session?.session_id || isRecording || isSubmitting) {
@@ -184,13 +184,15 @@ export default function App() {
   // Handle keyboard: Hold Enter to record
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.repeat) {
+      if (e.key === 'Enter' && !e.repeat && !isRecording && !isSubmitting && !gameEnded && session?.session_id) {
+        e.preventDefault();
         handleStartRecording();
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' && isRecording && !isSubmitting) {
+        e.preventDefault();
         handleStopRecording();
       }
     };
@@ -202,7 +204,7 @@ export default function App() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [handleStartRecording, handleStopRecording]);
+  }, [handleStartRecording, handleStopRecording, isRecording, isSubmitting, gameEnded, session?.session_id]);
 
   if (isLoading) {
     return <main className="container">Initializing session...</main>;

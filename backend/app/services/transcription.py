@@ -101,5 +101,5 @@ class TranscriptionService:
 
 def get_transcription_service() -> TranscriptionService:
     settings = get_settings()
-    model = settings.groq_transcription_model or "whisper-large-v3"
+    model = settings.groq_transcription_model or "whisper-large-v3-turbo"
     return TranscriptionService(api_key=settings.groq_api_key, model=model)

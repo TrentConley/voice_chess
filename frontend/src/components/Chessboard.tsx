@@ -1,4 +1,4 @@
-import { useMemo, memo } from "react";
+import { useMemo, memo, useEffect } from "react";
 
 import "./Chessboard.css";
 
@@ -25,6 +25,17 @@ const pieceImages: Record<string, string> = {
   Q: "https://lichess1.org/assets/_W5EUck/piece/cburnett/wQ.svg",
   K: "https://lichess1.org/assets/_W5EUck/piece/cburnett/wK.svg",
 };
+
+// Preload all piece images to prevent flashing
+const preloadImages = () => {
+  Object.values(pieceImages).forEach((src) => {
+    const img = new Image();
+    img.src = src;
+  });
+};
+
+// Preload images immediately
+preloadImages();
 
 function squareId(file: string, rank: number) {
   return `${file}${rank}`;
@@ -60,6 +71,11 @@ function parseFen(fen?: string): (string | null)[][] {
 export const Chessboard = memo(function Chessboard({ fen, highlights = [], showCoordinates = true, showPieces = true }: ChessboardProps) {
   // Only parse FEN when pieces need to be shown - prevents flash when toggled off
   const layout = useMemo(() => showPieces ? parseFen(fen) : null, [fen, showPieces]);
+  
+  // Stabilize highlights array reference
+  const stableHighlights = useMemo(() => highlights, [highlights.join(',')]);
+  
+  const highlightSet = useMemo(() => new Set(stableHighlights), [stableHighlights]);
 
   return (
     <div className="board">
@@ -68,7 +84,7 @@ export const Chessboard = memo(function Chessboard({ fen, highlights = [], showC
           {files.map((file, fileIdx) => {
             const id = squareId(file, rank);
             const isLight = (fileIdx + rank) % 2 === 0;
-            const isHighlighted = highlights.includes(id);
+            const isHighlighted = highlightSet.has(id);
             const rowIndex = 8 - rank;
             const pieceCode = layout ? layout[rowIndex]?.[fileIdx] ?? null : null;
             const pieceImage = pieceCode ? pieceImages[pieceCode] : null;
