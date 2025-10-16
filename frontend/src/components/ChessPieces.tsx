@@ -1,9 +1,20 @@
 interface PieceProps {
   color: 'white' | 'black';
   size?: number;
+  mobile?: boolean;
 }
 
-export function Pawn({ color, size = 40 }: PieceProps) {
+export function Pawn({ color, size = 40, mobile = false }: PieceProps) {
+  if (mobile) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
+        <circle cx="22.5" cy="10" r="5" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <ellipse cx="22.5" cy="25" rx="8" ry="9" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <rect x="14" y="32" width="17" height="6" rx="1" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+      </svg>
+    );
+  }
+  
   return (
     <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
       <circle cx="22.5" cy="9" r="4" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="1.5" />
@@ -24,7 +35,17 @@ export function Pawn({ color, size = 40 }: PieceProps) {
   );
 }
 
-export function Rook({ color, size = 40 }: PieceProps) {
+export function Rook({ color, size = 40, mobile = false }: PieceProps) {
+  if (mobile) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
+        <path d="M12 10h6v5h-6v5h21v-5h-6v-5h6v16H12V10z" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+        <rect x="11" y="26" width="23" height="5" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <rect x="9" y="31" width="27" height="6" rx="1" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+      </svg>
+    );
+  }
+  
   return (
     <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
       <path
@@ -38,7 +59,18 @@ export function Rook({ color, size = 40 }: PieceProps) {
   );
 }
 
-export function Knight({ color, size = 40 }: PieceProps) {
+export function Knight({ color, size = 40, mobile = false }: PieceProps) {
+  if (mobile) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
+        <path d="M15 10c0-2 2-4 4-4h8c2 0 4 2 4 4v8c0 3-2 5-5 5h-6c-3 0-5-2-5-5v-8z" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <rect x="13" y="23" width="19" height="8" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <rect x="11" y="31" width="23" height="6" rx="1" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <circle cx="21" cy="15" r="2" fill={color === 'white' ? '#000' : '#fff'} />
+      </svg>
+    );
+  }
+  
   return (
     <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
       <path
@@ -53,7 +85,18 @@ export function Knight({ color, size = 40 }: PieceProps) {
   );
 }
 
-export function Bishop({ color, size = 40 }: PieceProps) {
+export function Bishop({ color, size = 40, mobile = false }: PieceProps) {
+  if (mobile) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
+        <circle cx="22.5" cy="9" r="3" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <ellipse cx="22.5" cy="19" rx="6" ry="7" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <rect x="16" y="24" width="13" height="7" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <rect x="11" y="31" width="23" height="6" rx="1" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+      </svg>
+    );
+  }
+  
   return (
     <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
       <circle cx="22.5" cy="8" r="2.5" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="1.5" />
@@ -69,7 +112,20 @@ export function Bishop({ color, size = 40 }: PieceProps) {
   );
 }
 
-export function Queen({ color, size = 40 }: PieceProps) {
+export function Queen({ color, size = 40, mobile = false }: PieceProps) {
+  if (mobile) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
+        <circle cx="12" cy="11" r="2.5" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <circle cx="22.5" cy="7" r="2.5" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <circle cx="33" cy="11" r="2.5" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <path d="M12 14l3 10h15l3-10-4 6-5-4-5 4-4-6z" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" strokeLinejoin="round" />
+        <rect x="11" y="24" width="23" height="7" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <rect x="9" y="31" width="27" height="6" rx="1" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+      </svg>
+    );
+  }
+  
   return (
     <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
       <circle cx="10" cy="12" r="2" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="1.5" />
@@ -89,7 +145,19 @@ export function Queen({ color, size = 40 }: PieceProps) {
   );
 }
 
-export function King({ color, size = 40 }: PieceProps) {
+export function King({ color, size = 40, mobile = false }: PieceProps) {
+  if (mobile) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
+        <path d="M22.5 5v4m-3-2h6" stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
+        <circle cx="22.5" cy="14" r="4" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <rect x="15" y="18" width="15" height="8" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <rect x="12" y="26" width="21" height="5" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+        <rect x="9" y="31" width="27" height="6" rx="1" fill={color === 'white' ? '#fff' : '#000'} stroke="#000" strokeWidth="2.5" />
+      </svg>
+    );
+  }
+  
   return (
     <svg width={size} height={size} viewBox="0 0 45 45" fill="none">
       <path
@@ -115,24 +183,24 @@ export function King({ color, size = 40 }: PieceProps) {
   );
 }
 
-export function ChessPiece({ piece, size = 40 }: { piece: string; size?: number }) {
+export function ChessPiece({ piece, size = 40, mobile = false }: { piece: string; size?: number; mobile?: boolean }) {
   const isWhite = piece === piece.toUpperCase();
   const color = isWhite ? 'white' : 'black';
   const pieceType = piece.toLowerCase();
 
   switch (pieceType) {
     case 'p':
-      return <Pawn color={color} size={size} />;
+      return <Pawn color={color} size={size} mobile={mobile} />;
     case 'r':
-      return <Rook color={color} size={size} />;
+      return <Rook color={color} size={size} mobile={mobile} />;
     case 'n':
-      return <Knight color={color} size={size} />;
+      return <Knight color={color} size={size} mobile={mobile} />;
     case 'b':
-      return <Bishop color={color} size={size} />;
+      return <Bishop color={color} size={size} mobile={mobile} />;
     case 'q':
-      return <Queen color={color} size={size} />;
+      return <Queen color={color} size={size} mobile={mobile} />;
     case 'k':
-      return <King color={color} size={size} />;
+      return <King color={color} size={size} mobile={mobile} />;
     default:
       return null;
   }

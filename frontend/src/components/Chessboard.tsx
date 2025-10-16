@@ -1,4 +1,4 @@
-import { useMemo, memo } from "react";
+import { useMemo, memo, useState, useEffect } from "react";
 
 import "./Chessboard.css";
 import { ChessPiece } from "./ChessPieces";
@@ -44,6 +44,15 @@ function parseFen(fen?: string): (string | null)[][] {
 }
 
 export const Chessboard = memo(function Chessboard({ fen, highlights = [], showCoordinates = true, showPieces = true }: ChessboardProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Only parse FEN when pieces need to be shown - prevents flash when toggled off
   const layout = useMemo(() => showPieces ? parseFen(fen) : null, [fen, showPieces]);
 
@@ -65,7 +74,7 @@ export const Chessboard = memo(function Chessboard({ fen, highlights = [], showC
               >
                 {showPieces && pieceCode && (
                   <div className="piece">
-                    <ChessPiece piece={pieceCode} />
+                    <ChessPiece piece={pieceCode} mobile={isMobile} />
                   </div>
                 )}
                 {showCoordinates && <span className="coord">{id}</span>}
