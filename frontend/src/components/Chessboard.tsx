@@ -1,7 +1,6 @@
-import { useMemo, memo, useState, useEffect } from "react";
+import { useMemo, memo } from "react";
 
 import "./Chessboard.css";
-import { ChessPiece } from "./ChessPieces";
 
 interface ChessboardProps {
   fen?: string;
@@ -11,6 +10,21 @@ interface ChessboardProps {
 }
 
 const files = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
+
+const pieceImages: Record<string, string> = {
+  p: "https://lichess1.org/assets/_W5EUck/piece/cburnett/bP.svg",
+  r: "https://lichess1.org/assets/_W5EUck/piece/cburnett/bR.svg",
+  n: "https://lichess1.org/assets/_W5EUck/piece/cburnett/bN.svg",
+  b: "https://lichess1.org/assets/_W5EUck/piece/cburnett/bB.svg",
+  q: "https://lichess1.org/assets/_W5EUck/piece/cburnett/bQ.svg",
+  k: "https://lichess1.org/assets/_W5EUck/piece/cburnett/bK.svg",
+  P: "https://lichess1.org/assets/_W5EUck/piece/cburnett/wP.svg",
+  R: "https://lichess1.org/assets/_W5EUck/piece/cburnett/wR.svg",
+  N: "https://lichess1.org/assets/_W5EUck/piece/cburnett/wN.svg",
+  B: "https://lichess1.org/assets/_W5EUck/piece/cburnett/wB.svg",
+  Q: "https://lichess1.org/assets/_W5EUck/piece/cburnett/wQ.svg",
+  K: "https://lichess1.org/assets/_W5EUck/piece/cburnett/wK.svg",
+};
 
 function squareId(file: string, rank: number) {
   return `${file}${rank}`;
@@ -44,15 +58,6 @@ function parseFen(fen?: string): (string | null)[][] {
 }
 
 export const Chessboard = memo(function Chessboard({ fen, highlights = [], showCoordinates = true, showPieces = true }: ChessboardProps) {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
   // Only parse FEN when pieces need to be shown - prevents flash when toggled off
   const layout = useMemo(() => showPieces ? parseFen(fen) : null, [fen, showPieces]);
 
@@ -66,16 +71,20 @@ export const Chessboard = memo(function Chessboard({ fen, highlights = [], showC
             const isHighlighted = highlights.includes(id);
             const rowIndex = 8 - rank;
             const pieceCode = layout ? layout[rowIndex]?.[fileIdx] ?? null : null;
+            const pieceImage = pieceCode ? pieceImages[pieceCode] : null;
 
             return (
               <div
                 key={id}
                 className={`square ${isLight ? "light" : "dark"} ${isHighlighted ? "highlight" : ""}`.trim()}
               >
-                {showPieces && pieceCode && (
-                  <div className="piece">
-                    <ChessPiece piece={pieceCode} mobile={isMobile} />
-                  </div>
+                {showPieces && pieceImage && (
+                  <img 
+                    src={pieceImage} 
+                    alt={pieceCode || ''} 
+                    className="piece"
+                    draggable={false}
+                  />
                 )}
                 {showCoordinates && <span className="coord">{id}</span>}
               </div>
