@@ -78,7 +78,7 @@ export const Chessboard = memo(function Chessboard({ fen, highlights = [], showC
                 key={id}
                 className={`square ${isLight ? "light" : "dark"} ${isHighlighted ? "highlight" : ""}`.trim()}
               >
-                {showPieces && glyph && <span className="piece">{glyph}</span>}
+                {showPieces && glyph && <span className={`piece ${pieceCode === 'p' ? 'black-pawn' : ''}`}>{glyph}</span>}
                 {showCoordinates && <span className="coord">{id}</span>}
               </div>
             );
