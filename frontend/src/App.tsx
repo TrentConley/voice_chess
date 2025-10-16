@@ -189,6 +189,13 @@ export default function App() {
     event.currentTarget.blur();
   }, []);
 
+  // Prevent Enter key from triggering button clicks
+  const handleButtonKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+    }
+  }, []);
+
   // Handle keyboard: Hold Enter to record
   // Use refs to avoid recreating handlers on every state change
   const isRecordingRef = useRef(isRecording);
@@ -315,13 +322,13 @@ export default function App() {
           </div>
 
           <div className="toggle-group">
-            <button className={`btn-toggle ${showPieces ? "active" : ""}`} onClick={handleTogglePieces}>
+            <button className={`btn-toggle ${showPieces ? "active" : ""}`} onClick={handleTogglePieces} onKeyDown={handleButtonKeyDown}>
               Pieces
             </button>
-            <button className={`btn-toggle ${showCoordinates ? "active" : ""}`} onClick={() => setShowCoordinates((prev) => !prev)}>
+            <button className={`btn-toggle ${showCoordinates ? "active" : ""}`} onClick={() => setShowCoordinates((prev) => !prev)} onKeyDown={handleButtonKeyDown}>
               Coords
             </button>
-            <button className={`btn-toggle ${showMoves ? "active" : ""}`} onClick={() => setShowMoves((prev) => !prev)}>
+            <button className={`btn-toggle ${showMoves ? "active" : ""}`} onClick={() => setShowMoves((prev) => !prev)} onKeyDown={handleButtonKeyDown}>
               History
             </button>
           </div>
