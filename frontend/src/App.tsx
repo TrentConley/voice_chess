@@ -51,6 +51,7 @@ export default function App() {
   const [showCoordinates, setShowCoordinates] = useState(true);
   const [skillLevel, setSkillLevel] = useState(5);
   const [gameEnded, setGameEnded] = useState(false);
+  const [isMovesCollapsed, setIsMovesCollapsed] = useState(false);
   const { isRecording, start, stop, error: recorderError } = useAudioRecorder();
 
   useEffect(() => {
@@ -223,6 +224,7 @@ export default function App() {
       </section>
 
       <section className="control-section">
+        <div className="mobile-handle" />
         <h1>Voice Chess</h1>
         <h1>By Trent Conley</h1>
 
@@ -301,20 +303,27 @@ export default function App() {
         </div>
 
         {showMoves && (
-          <div className="moves">
-            <h2>Move History</h2>
-            {session.moves.length === 0 ? (
-              <p style={{ color: "#a3a3a3", fontSize: "0.875rem" }}>No moves yet.</p>
-            ) : (
-              <ol>
-                {session.moves.map((move) => (
-                  <li key={`${move.ply}-${move.timestamp}`} className={`move ${move.actor}`}>
-                    <strong>{move.actor === "player" ? "You" : "Engine"}</strong>
-                    <span>{move.san}</span>
-                    {move.actor === "player" && move.transcript ? <em>{move.transcript}</em> : null}
-                  </li>
-                ))}
-              </ol>
+          <div className={`moves ${isMovesCollapsed ? 'collapsed' : ''}`}>
+            <h2 onClick={() => setIsMovesCollapsed(!isMovesCollapsed)}>
+              <span>Move History</span>
+              <span className="expand-icon">▼</span>
+            </h2>
+            {!isMovesCollapsed && (
+              <>
+                {session.moves.length === 0 ? (
+                  <p style={{ color: "#a3a3a3", fontSize: "0.875rem" }}>No moves yet.</p>
+                ) : (
+                  <ol>
+                    {session.moves.map((move) => (
+                      <li key={`${move.ply}-${move.timestamp}`} className={`move ${move.actor}`}>
+                        <strong>{move.actor === "player" ? "You" : "Engine"}</strong>
+                        <span>{move.san}</span>
+                        {move.actor === "player" && move.transcript ? <em>{move.transcript}</em> : null}
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </>
             )}
           </div>
         )}
