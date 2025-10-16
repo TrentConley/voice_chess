@@ -11,7 +11,8 @@ import chess
 from fastapi import HTTPException
 from tenacity import RetryError, retry, stop_after_attempt, wait_exponential
 
-from ..core.llm import get_openai_client
+from ..core.llm import get_groq_client
+from ..core.config import get_settings
 
 
 logger = logging.getLogger(__name__)
@@ -19,16 +20,18 @@ logger = logging.getLogger(__name__)
 
 MOVE_FUNCTION = {
     "type": "function",
-    "name": "submit_move",
-    "description": "Normalize a spoken chess move into UCI format.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "uci": {"type": "string", "description": "Move in UCI notation"},
-            "san": {"type": "string", "description": "Move in SAN notation"},
+    "function": {
+        "name": "submit_move",
+        "description": "Normalize a spoken chess move into UCI format.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "uci": {"type": "string", "description": "Move in UCI notation"},
+                "san": {"type": "string", "description": "Move in SAN notation"},
+            },
+            "required": ["uci"],
+            "additionalProperties": False,
         },
-        "required": ["uci"],
-        "additionalProperties": False,
     },
 }
 
@@ -41,7 +44,9 @@ class MoveInterpretation:
 
 class MoveInterpreter:
     def __init__(self) -> None:
-        self.client = get_openai_client()
+        self.client = get_groq_client()
+        settings = get_settings()
+        self.model = settings.groq_llm_model or "openai/gpt-oss-20b"
 
     async def interpret(self, transcript: str, board: chess.Board) -> MoveInterpretation:
         logger.info("Interpreting transcript: '%s'", transcript)
@@ -161,44 +166,56 @@ class MoveInterpreter:
         
         logger.info("LLM input messages: %s", json.dumps(input_messages, indent=2))
 
-        return self.client.responses.create(
-            model="gpt-4o-mini",  # Much faster than gpt-5, still excellent quality
-            input=input_messages,
+        # Convert to standard chat completion format
+        messages = []
+        for msg in input_messages:
+            role = msg["role"]
+            content_parts = msg["content"]
+            # Combine all text parts into a single string
+            text = "\n".join([part["text"] for part in content_parts if part.get("type") == "input_text"])
+            messages.append({"role": role, "content": text})
+        
+        logger.info("Calling Groq with model: %s", self.model)
+        
+        return self.client.chat.completions.create(
+            model=self.model,
+            messages=messages,
             tools=[MOVE_FUNCTION],
+            temperature=0.0,  # Deterministic for consistent move parsing
         )
 
     def _parse_response(self, response) -> Optional[MoveInterpretation]:
-        items = getattr(response, "output", None) or []
-        logger.debug("Parsing response with %d output items", len(items))
+        # Parse standard OpenAI chat completion response
+        logger.debug("Parsing chat completion response: %s", response)
         
-        for item in items:
-            item_type = getattr(item, "type", None)
-            item_name = getattr(item, "name", None)
-            logger.debug("Output item: type=%s, name=%s", item_type, item_name)
-            
-            if item_type == "function_call" and item_name == "submit_move":
-                arguments = getattr(item, "arguments", {})
-                logger.debug("Function call arguments (raw): %s (type: %s)", arguments, type(arguments).__name__)
-                
-                if isinstance(arguments, str):
+        if not response.choices:
+            logger.warning("No choices in response")
+            return None
+        
+        message = response.choices[0].message
+        
+        # Check for tool calls (function calls)
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                if tool_call.function.name == "submit_move":
                     try:
-                        arguments = json.loads(arguments)
-                        logger.debug("Parsed JSON arguments: %s", arguments)
+                        arguments = json.loads(tool_call.function.arguments)
+                        logger.debug("Function call arguments: %s", arguments)
+                        
+                        uci = arguments.get("uci", "").strip()
+                        san = arguments.get("san")
+                        logger.info("Extracted from function call: uci='%s', san='%s'", uci, san)
+                        
+                        if uci:
+                            return MoveInterpretation(uci=uci, san_hint=san)
                     except json.JSONDecodeError as e:
-                        logger.warning("Failed to parse arguments as JSON: %s", e)
-                        arguments = {"uci": arguments}
-                
-                uci = (arguments or {}).get("uci", "").strip()
-                san = (arguments or {}).get("san")
-                logger.info("Extracted from function call: uci='%s', san='%s'", uci, san)
-                
-                if uci:
-                    return MoveInterpretation(uci=uci, san_hint=san)
-
-        fallback = getattr(response, "output_text", None)
-        if fallback:
-            logger.debug("No function call found, trying fallback text: %s", fallback)
-            match = re.search(r"([a-h][1-8][a-h][1-8][nbrq]?)", fallback)
+                        logger.warning("Failed to parse tool call arguments as JSON: %s", e)
+        
+        # Fallback to content if no tool call
+        content = message.content
+        if content:
+            logger.debug("No tool call found, trying fallback content: %s", content)
+            match = re.search(r"([a-h][1-8][a-h][1-8][nbrq]?)", content)
             if match:
                 logger.info("Extracted from fallback text: uci='%s'", match.group(1))
                 return MoveInterpretation(uci=match.group(1))

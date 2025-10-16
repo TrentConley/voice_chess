@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 
 import "./Chessboard.css";
 
@@ -57,7 +57,7 @@ function parseFen(fen?: string): (string | null)[][] {
   });
 }
 
-export function Chessboard({ fen, highlights = [], showCoordinates = true, showPieces = true }: ChessboardProps) {
+export const Chessboard = memo(function Chessboard({ fen, highlights = [], showCoordinates = true, showPieces = true }: ChessboardProps) {
   // Only parse FEN when pieces need to be shown - prevents flash when toggled off
   const layout = useMemo(() => showPieces ? parseFen(fen) : null, [fen, showPieces]);
 
@@ -87,4 +87,4 @@ export function Chessboard({ fen, highlights = [], showCoordinates = true, showP
       ))}
     </div>
   );
-}
+});

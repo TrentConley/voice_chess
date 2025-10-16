@@ -6,9 +6,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     openai_api_key: Optional[str] = None
-    openai_transcription_model: Optional[str] = None
-    elevenlabs_api_key: Optional[str] = None
-    elevenlabs_model: Optional[str] = None
+    groq_api_key: Optional[str] = None
+    groq_transcription_model: Optional[str] = None
+    groq_llm_model: Optional[str] = None
     stockfish_path: Optional[str] = None
     frontend_origin: Optional[str] = None
     log_level: str = "INFO"

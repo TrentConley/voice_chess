@@ -16,7 +16,7 @@ A voice-controlled chess application where you speak your moves and play against
 ### Prerequisites
 
 - Docker & Docker Compose
-- ElevenLabs API key
+- Groq API key (free tier available)
 
 ### Setup
 
@@ -24,9 +24,9 @@ A voice-controlled chess application where you speak your moves and play against
 
 2. Create a `.env` file in the project root:
 ```bash
-ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
-ELEVENLABS_MODEL=scribe_v1
-OPENAI_API_KEY=your_openai_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_TRANSCRIPTION_MODEL=whisper-large-v3-turbo
+GROQ_LLM_MODEL=openai/gpt-oss-20b
 LOG_LEVEL=INFO
 ```
 
@@ -62,8 +62,8 @@ Use the **Engine Difficulty** slider to set Stockfish's skill level:
 
 - **Backend**: FastAPI (Python) with Stockfish chess engine
 - **Frontend**: React + TypeScript with Vite
-- **Transcription**: ElevenLabs Speech-to-Text API
-- **Move Interpretation**: GPT-4o-mini with function calling
+- **Transcription**: Groq Whisper API (whisper-large-v3-turbo)
+- **Move Interpretation**: Groq OpenAI GPT OSS 20B with function calling
 - **Chess Engine**: Stockfish
 
 ## Development
@@ -89,9 +89,9 @@ docker compose down
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ELEVENLABS_API_KEY` | - | Required: Your ElevenLabs API key for transcription |
-| `ELEVENLABS_MODEL` | `scribe_v1` | ElevenLabs transcription model (scribe_v1 or scribe_v1_experimental) |
-| `OPENAI_API_KEY` | - | Required: Your OpenAI API key for move interpretation |
+| `GROQ_API_KEY` | - | Required: Your Groq API key |
+| `GROQ_TRANSCRIPTION_MODEL` | `whisper-large-v3-turbo` | Groq transcription model (whisper-large-v3-turbo or whisper-large-v3) |
+| `GROQ_LLM_MODEL` | `openai/gpt-oss-20b` | Groq LLM for move interpretation |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 
 ## Created By
