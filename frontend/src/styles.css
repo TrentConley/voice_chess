@@ -209,6 +209,50 @@ body {
   gap: 1rem;
 }
 
+.record-button-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+}
+
+@media (max-width: 768px) {
+  .record-button-wrapper {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+.record-button-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: #0a0a0a;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.record-button-wrapper.processing::before {
+  opacity: 1;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 .btn-record {
   width: 80px;
   height: 80px;

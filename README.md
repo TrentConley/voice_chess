@@ -25,7 +25,7 @@ A voice-controlled chess application where you speak your moves and play against
 2. Create a `.env` file in the project root:
 ```bash
 OPENAI_API_KEY=your_api_key_here
-OPENAI_TRANSCRIPTION_MODEL=gpt-4o-mini-transcribe
+OPENAI_TRANSCRIPTION_MODEL=whisper-1
 LOG_LEVEL=INFO
 ```
 
@@ -89,7 +89,7 @@ docker compose down
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OPENAI_API_KEY` | - | Required: Your OpenAI API key |
-| `OPENAI_TRANSCRIPTION_MODEL` | `gpt-4o-mini-transcribe` | Transcription model |
+| `OPENAI_TRANSCRIPTION_MODEL` | `whisper-1` | Transcription model (OpenAI Whisper) |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 
 ## Created By

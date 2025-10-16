@@ -6,7 +6,7 @@ services:
       - ./.env
     environment:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
-      OPENAI_TRANSCRIPTION_MODEL: ${OPENAI_TRANSCRIPTION_MODEL:-gpt-4o-transcribe}
+      OPENAI_TRANSCRIPTION_MODEL: ${OPENAI_TRANSCRIPTION_MODEL:-whisper-1}
       STOCKFISH_PATH: ${STOCKFISH_PATH:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:

@@ -84,5 +84,5 @@ class TranscriptionService:
 
 def get_transcription_service() -> TranscriptionService:
     settings = get_settings()
-    model = settings.openai_transcription_model or "gpt-4o-transcribe"
+    model = settings.openai_transcription_model or "whisper-1"
     return TranscriptionService(api_key=settings.openai_api_key, model=model)
