@@ -291,7 +291,7 @@ export default function App() {
           </div>
 
           {gameEnded && (
-            <button className="btn-restart" onClick={startNewGame}>
+            <button className="btn-restart" onClick={startNewGame} onKeyDown={handleButtonKeyDown}>
               Start New Game
             </button>
           )}
