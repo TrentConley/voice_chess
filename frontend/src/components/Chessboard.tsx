@@ -1,6 +1,7 @@
 import { useMemo, memo } from "react";
 
 import "./Chessboard.css";
+import { ChessPiece } from "./ChessPieces";
 
 interface ChessboardProps {
   fen?: string;
@@ -10,21 +11,6 @@ interface ChessboardProps {
 }
 
 const files = ["a", "b", "c", "d", "e", "f", "g", "h"] as const;
-
-const pieceGlyph: Record<string, string> = {
-  p: "♟",
-  r: "♜",
-  n: "♞",
-  b: "♝",
-  q: "♛",
-  k: "♚",
-  P: "♙",
-  R: "♖",
-  N: "♘",
-  B: "♗",
-  Q: "♕",
-  K: "♔",
-};
 
 function squareId(file: string, rank: number) {
   return `${file}${rank}`;
@@ -71,14 +57,17 @@ export const Chessboard = memo(function Chessboard({ fen, highlights = [], showC
             const isHighlighted = highlights.includes(id);
             const rowIndex = 8 - rank;
             const pieceCode = layout ? layout[rowIndex]?.[fileIdx] ?? null : null;
-            const glyph = pieceCode ? pieceGlyph[pieceCode] ?? pieceCode : null;
 
             return (
               <div
                 key={id}
                 className={`square ${isLight ? "light" : "dark"} ${isHighlighted ? "highlight" : ""}`.trim()}
               >
-                {showPieces && glyph && <span className="piece">{glyph}</span>}
+                {showPieces && pieceCode && (
+                  <div className="piece">
+                    <ChessPiece piece={pieceCode} />
+                  </div>
+                )}
                 {showCoordinates && <span className="coord">{id}</span>}
               </div>
             );
