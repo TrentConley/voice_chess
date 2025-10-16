@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef, type MouseEvent } from "react";
 
 import { submitTurnStream, createSession, getSession, updateSkillLevel, type StreamUpdate } from "./api/client";
 import { Chessboard } from "./components/Chessboard";
@@ -89,6 +89,9 @@ export default function App() {
   }, [recorderError]);
 
   const highlights = useMemo(() => (session ? computeHighlights(session.moves) : []), [session?.moves]);
+  
+  // Stabilize FEN to prevent Chessboard re-renders during status changes
+  const currentFen = useMemo(() => session?.fen, [session?.fen]);
 
   const handleStartRecording = useCallback(async () => {
     if (!session?.session_id || isRecording || isSubmitting) {
@@ -181,17 +184,35 @@ export default function App() {
     }
   }, [session, isRecording, isSubmitting, stop]);
 
+  const handleTogglePieces = useCallback((event: MouseEvent<HTMLButtonElement>) => {
+    setShowPieces((prev) => !prev);
+    event.currentTarget.blur();
+  }, []);
+
   // Handle keyboard: Hold Enter to record
+  // Use refs to avoid recreating handlers on every state change
+  const isRecordingRef = useRef(isRecording);
+  const isSubmittingRef = useRef(isSubmitting);
+  const gameEndedRef = useRef(gameEnded);
+  const sessionIdRef = useRef(session?.session_id);
+
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+    isSubmittingRef.current = isSubmitting;
+    gameEndedRef.current = gameEnded;
+    sessionIdRef.current = session?.session_id;
+  });
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.repeat && !isRecording && !isSubmitting && !gameEnded && session?.session_id) {
+      if (e.key === 'Enter' && !e.repeat && !isRecordingRef.current && !isSubmittingRef.current && !gameEndedRef.current && sessionIdRef.current) {
         e.preventDefault();
         handleStartRecording();
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && isRecording && !isSubmitting) {
+      if (e.key === 'Enter' && isRecordingRef.current && !isSubmittingRef.current) {
         e.preventDefault();
         handleStopRecording();
       }
@@ -204,7 +225,7 @@ export default function App() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [handleStartRecording, handleStopRecording, isRecording, isSubmitting, gameEnded, session?.session_id]);
+  }, [handleStartRecording, handleStopRecording]);
 
   if (isLoading) {
     return <main className="container">Initializing session...</main>;
@@ -218,7 +239,7 @@ export default function App() {
     <main className="container">
       <section className="board-section">
         <Chessboard
-          fen={session.fen}
+          fen={currentFen}
           highlights={highlights}
           showCoordinates={showCoordinates}
           showPieces={showPieces}
@@ -294,7 +315,7 @@ export default function App() {
           </div>
 
           <div className="toggle-group">
-            <button className={`btn-toggle ${showPieces ? "active" : ""}`} onClick={() => setShowPieces((prev) => !prev)}>
+            <button className={`btn-toggle ${showPieces ? "active" : ""}`} onClick={handleTogglePieces}>
               Pieces
             </button>
             <button className={`btn-toggle ${showCoordinates ? "active" : ""}`} onClick={() => setShowCoordinates((prev) => !prev)}>
