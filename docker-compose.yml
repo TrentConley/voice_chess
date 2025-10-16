@@ -6,7 +6,8 @@ services:
       - ./.env
     environment:
       FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:5173}
-      OPENAI_TRANSCRIPTION_MODEL: ${OPENAI_TRANSCRIPTION_MODEL:-whisper-1}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_MODEL: ${ELEVENLABS_MODEL:-scribe_v1}
       STOCKFISH_PATH: ${STOCKFISH_PATH:-}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     ports:

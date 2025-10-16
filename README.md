@@ -16,7 +16,7 @@ A voice-controlled chess application where you speak your moves and play against
 ### Prerequisites
 
 - Docker & Docker Compose
-- OpenAI API key
+- ElevenLabs API key
 
 ### Setup
 
@@ -24,8 +24,9 @@ A voice-controlled chess application where you speak your moves and play against
 
 2. Create a `.env` file in the project root:
 ```bash
-OPENAI_API_KEY=your_api_key_here
-OPENAI_TRANSCRIPTION_MODEL=whisper-1
+ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
+ELEVENLABS_MODEL=scribe_v1
+OPENAI_API_KEY=your_openai_api_key_here
 LOG_LEVEL=INFO
 ```
 
@@ -61,7 +62,7 @@ Use the **Engine Difficulty** slider to set Stockfish's skill level:
 
 - **Backend**: FastAPI (Python) with Stockfish chess engine
 - **Frontend**: React + TypeScript with Vite
-- **Transcription**: OpenAI Whisper API
+- **Transcription**: ElevenLabs Speech-to-Text API
 - **Move Interpretation**: GPT-4o-mini with function calling
 - **Chess Engine**: Stockfish
 
@@ -88,8 +89,9 @@ docker compose down
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENAI_API_KEY` | - | Required: Your OpenAI API key |
-| `OPENAI_TRANSCRIPTION_MODEL` | `whisper-1` | Transcription model (OpenAI Whisper) |
+| `ELEVENLABS_API_KEY` | - | Required: Your ElevenLabs API key for transcription |
+| `ELEVENLABS_MODEL` | `scribe_v1` | ElevenLabs transcription model (scribe_v1 or scribe_v1_experimental) |
+| `OPENAI_API_KEY` | - | Required: Your OpenAI API key for move interpretation |
 | `LOG_LEVEL` | `INFO` | Logging level (DEBUG, INFO, WARNING, ERROR) |
 
 ## Created By

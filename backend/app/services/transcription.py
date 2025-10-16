@@ -14,18 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class TranscriptionService:
-    # Chess-specific vocabulary to guide transcription
-    CHESS_PROMPT = (
-        "Chess move notation: pawn, knight, bishop, rook, queen, king, "
-        "castle, castles, check, checkmate, capture, captures, takes, "
-        "files a through h, ranks 1 through 8, "
-        "e4, d4, Nf3, Nc3, Bc4, O-O, queenside, kingside"
-    )
-    
     def __init__(self, api_key: Optional[str], model: str) -> None:
         self.api_key = api_key
         self.model = model
-        self.endpoint = "https://api.openai.com/v1/audio/transcriptions"
+        self.endpoint = "https://api.elevenlabs.io/v1/speech-to-text"
 
     async def transcribe(self, file: UploadFile) -> str:
         contents = await file.read()
@@ -33,7 +25,7 @@ class TranscriptionService:
     
     async def transcribe_bytes(self, contents: bytes, filename: Optional[str] = None, content_type: Optional[str] = None) -> str:
         if not self.api_key:
-            raise HTTPException(status_code=500, detail="OpenAI API key is not configured")
+            raise HTTPException(status_code=500, detail="ElevenLabs API key is not configured")
 
         if not contents:
             raise HTTPException(status_code=400, detail="Empty audio payload")
@@ -43,15 +35,13 @@ class TranscriptionService:
             "file": (filename or "audio.webm", data, content_type or "audio/webm"),
         }
         form_data = {
-            "model": self.model,
-            "response_format": "json",
-            "language": "en",  # Force English for better accuracy
-            "prompt": self.CHESS_PROMPT,  # Chess-specific vocabulary guidance
+            "model_id": self.model,
+            "language_code": "en",  # Force English for better accuracy
         }
         headers = {
-            "Authorization": f"Bearer {self.api_key}",
+            "xi-api-key": self.api_key,
         }
-        logger.debug("Sending audio (%d bytes, content-type %s) to transcription model %s with chess prompt", len(contents), content_type, self.model)
+        logger.debug("Sending audio (%d bytes, content-type %s) to ElevenLabs transcription model %s", len(contents), content_type, self.model)
 
         try:
             response = requests.post(
@@ -84,5 +74,5 @@ class TranscriptionService:
 
 def get_transcription_service() -> TranscriptionService:
     settings = get_settings()
-    model = settings.openai_transcription_model or "whisper-1"
-    return TranscriptionService(api_key=settings.openai_api_key, model=model)
+    model = settings.elevenlabs_model or "scribe_v1"
+    return TranscriptionService(api_key=settings.elevenlabs_api_key, model=model)
