@@ -38,21 +38,36 @@ class TranscriptionService:
         if not contents:
             raise HTTPException(status_code=400, detail="Empty audio payload")
 
+        # Groq API expects the file as multipart/form-data
+        # Use generic audio filename since format detection is automatic
         data = io.BytesIO(contents)
+        
+        # Determine file extension from content type or filename
+        file_ext = "webm"
+        if content_type:
+            if "mp3" in content_type:
+                file_ext = "mp3"
+            elif "mp4" in content_type or "m4a" in content_type:
+                file_ext = "m4a"
+            elif "wav" in content_type:
+                file_ext = "wav"
+            elif "ogg" in content_type:
+                file_ext = "ogg"
+        
         files = {
-            "file": (filename or "audio.webm", data, content_type or "audio/webm"),
+            "file": (f"audio.{file_ext}", data, content_type or "audio/webm"),
         }
         form_data = {
             "model": self.model,
             "response_format": "json",
-            "language": "en",  # Force English for better accuracy
-            "prompt": self.CHESS_PROMPT,  # Chess-specific vocabulary guidance
-            "temperature": 0.0,  # Deterministic transcription
+            "language": "en",
+            "prompt": self.CHESS_PROMPT,
+            "temperature": 0.0,
         }
         headers = {
             "Authorization": f"Bearer {self.api_key}",
         }
-        logger.debug("Sending audio (%d bytes, content-type %s) to Groq transcription model %s with chess prompt", len(contents), content_type, self.model)
+        logger.debug("Sending audio (%d bytes, type=%s, ext=%s) to Groq model %s", len(contents), content_type, file_ext, self.model)
 
         try:
             response = requests.post(
@@ -70,7 +85,8 @@ class TranscriptionService:
             status = exc.response.status_code if exc.response else "unknown"
             body = exc.response.text if exc.response else ""
             logger.error("Transcription API returned %s: %s", status, body)
-            raise HTTPException(status_code=502, detail="Transcription service returned an error") from exc
+            detail_msg = f"Transcription failed: {body[:200]}" if body else "Transcription service error"
+            raise HTTPException(status_code=502, detail=detail_msg) from exc
         except requests.RequestException as exc:
             logger.exception("Transcription request failed")
             raise HTTPException(status_code=502, detail="Network error during transcription. Please try again.") from exc
@@ -85,5 +101,5 @@ class TranscriptionService:
 
 def get_transcription_service() -> TranscriptionService:
     settings = get_settings()
-    model = settings.groq_transcription_model or "whisper-large-v3-turbo"
+    model = settings.groq_transcription_model or "whisper-large-v3"
     return TranscriptionService(api_key=settings.groq_api_key, model=model)

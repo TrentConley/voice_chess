@@ -46,7 +46,7 @@ class MoveInterpreter:
     def __init__(self) -> None:
         self.client = get_groq_client()
         settings = get_settings()
-        self.model = settings.groq_llm_model or "openai/gpt-oss-20b"
+        self.model = settings.groq_llm_model or "llama-3.1-70b-versatile"
 
     async def interpret(self, transcript: str, board: chess.Board) -> MoveInterpretation:
         logger.info("Interpreting transcript: '%s'", transcript)
